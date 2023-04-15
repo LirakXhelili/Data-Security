@@ -1,67 +1,56 @@
-import cv2
-import numpy as np
-import string
+from PIL import Image
+import random
 
-# example usage
-image_path = r'C:\Users\User\Desktop\Python\photo.jpg'
-secret_message = 'This'
-key = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*()_+-={}|[]\\:\";\',./<>?'
+image_path = r'C:\Users\User\Desktop\Python\Picture1.png'
+# Mapping of characters to colors
+color_map = {
+    "a": (255, 0, 0), # red
+    "b": (0, 255, 0), # green
+    "c": (0, 0, 255), # blue
+    "d": (255, 255, 0), # yellow
+    "e": (255, 0, 255), # magenta
+    "f": (0, 255, 255), # cyan
+    "g": (128, 0, 0), # maroon
+    "h": (0, 128, 0), # dark green
+    "i": (0, 0, 128), # navy
+    "j": (128, 128, 0), # olive
+    "k": (128, 0, 128), # purple
+    "l": (0, 128, 128), # teal
+    "m": (128, 0, 64), # crimson
+    "n": (0, 128, 64), # forest green
+    "o": (64, 0, 128), # indigo
+    "p": (64, 128, 0), # olive green
+    "q": (128, 64, 0), # brown
+    "r": (128, 0, 1), # maroon
+    "s": (0, 128, 128), # teal
+    "t": (128, 128, 128), # gray
+    "u": (255, 128, 0), # orange
+    "v": (255, 0, 128), # pink
+    "w": (0, 255, 128), # spring green
+    "x": (128, 0, 255), # violet
+    "y": (0, 255, 0), # lime green
+    "z": (128, 128, 0) # olive
+}
 
 
-def encrypt_image(img_path, message, key, pad_color=(0, 0, 0)):
-    img = cv2.imread(img_path)
-    h, w, _ = img.shape
-    
-    # create a mapping dictionary with color values based on the key
-    mapping = {}
-    for i, char in enumerate(key):
-        b, g, r = np.random.randint(0, 256, 3)
-        while (b, g, r) in mapping.values():
-            b, g, r = np.random.randint(0, 256, 3)
-        mapping[char] = (b, g, r)
+# Generate a random padding color
+pad_color = (random.randint(0, 255), random.randint(0, 255), random.randint(0, 255))
 
-    # convert message to binary string
-    binary_message = ''.join(format(ord(char), '08b') for char in message)
+# Encryption function
+def encrypt_text(text):
+    # Convert the text to lowercase and remove whitespace
+    text = text.lower().replace(" ", "")
 
-    # pad message with specified color if needed
-    pad_length = (h * w * 3) - len(binary_message)
-    if pad_length < 0:
-        raise ValueError("Message too long for image.")
-    binary_message += ''.join(format(pad_color[i], '08b') for i in range(3)) * pad_length
+    # Determine the dimensions of the image
+    width = len(text)
+    height = width
 
-    # modify the image with the mapping colors based on the binary message
-    k = 0
-    for i in range(h):
-        for j in range(w):
-            for c in range(3):
-                if k < len(binary_message):
-                    if binary_message[k] == '1':
-                        img[i, j, c] = mapping[key[c]][c]
-                    else:
-                        img[i, j, c] = pad_color[c]
-                    k += 1
+    # Create a new image
+    image = Image.new("RGB", (width, height), pad_color)
 
-    # save the modified image
-    cv2.imwrite('encrypted_image.png', img)
-    print('Message encrypted')
+    # Map each character to a color and set the corresponding pixel
+    for i, char in enumerate(text):
+        color = color_map.get(char, pad_color)
+        image.putpixel((i, i), color)
 
-def decrypt(image_path, key):
-    img = cv2.imread(image_path)
-    height, width, _ = img.shape
-    message = ""
-    mapping = dict(zip(key, string.ascii_lowercase))
-    reverse_mapping = dict(zip(string.ascii_lowercase, key))
-    for i in range(height):
-        for j in range(width):
-            color = tuple(img[i, j])
-            if color in mapping:
-                message += mapping[color]
-            else:
-                message += " "  # Default character
-    return message
-
-encrypt_image(image_path, secret_message, key)
-
-encrypted_image_path = 'encrypted_image.png'
-encrypted_message = decrypt(encrypted_image_path, key)
-print('Decrypted message:', encrypted_message)
+    return image
